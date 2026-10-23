@@ -1,0 +1,71 @@
+// Prisma schema for Tour360 Virtual Tour System
+// Database: SQLite (dev.db)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("ADMIN") // SUPER_ADMIN, ADMIN, EDITOR
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Scene {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  imageUrl    String    // Path to 360 equirectangular panorama (e.g., /uploads/...)
+  thumbnailUrl String?
+  isDefault   Boolean   @default(false)
+  initialPitch Float    @default(0)   // Initial camera vertical angle in degrees
+  initialYaw   Float    @default(0)   // Initial camera horizontal angle in degrees
+  category    String?   @default("General")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  hotspots    Hotspot[]
+}
+
+model Hotspot {
+  id             String   @id @default(uuid())
+  sceneId        String
+  scene          Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  title          String
+  type           String   @default("navigation") // "navigation" (scene switch) or "info" (modal popup)
+  targetSceneId  String?  // ID of target scene if type == "navigation"
+  
+  // Mathematical Coordinates on the 360 Sphere
+  pitch          Float    // Vertical angle (-90 to +90 degrees)
+  yaw            Float    // Horizontal angle (-180 to +180 degrees)
+  
+  // Street View Ground Alignment
+  groundPlacement Boolean @default(true) // If true, renders as Google Street View ground chevron/disk
+  groundElevation Float   @default(-35.0) // Preferred floor pitch level
+  
+  // Content details for info type
+  description    String?
+  imageUrl       String?
+  icon           String?  @default("arrow") // arrow, info, door, eye, star
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
